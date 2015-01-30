@@ -1,0 +1,25 @@
+{
+    "parameters": {
+        "x1": {
+            "default": 1,
+            "type": "int"
+        },
+        "x2": {
+            "default": 0.5,
+            "type": "float"
+        }
+    },
+    "simulation": {
+        "interpreter": "bash",
+        "name": "transims-4.0.8",
+        "snippet": "./RunAll.sh",
+		"directory": "~/Developer/sim-city/transims-us101",
+	    "working_directory": "control"
+    },
+	"preprocess": {
+		"name": "transims-4.0.8-template"
+	},
+	"parameter_exploration": {
+		"name": "default"
+	},
+}
