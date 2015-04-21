@@ -6,8 +6,8 @@ LICENSE_NAME="Apache License, Version 2.0"
 all: install
 
 requirements:
-	@pip install numexpr==2.4.1
 	@pip install -r requirements.txt
+	@pip install tables==3.1.1
 
 test-requirements:
 	@pip install -r test_requirements.txt > /dev/null
