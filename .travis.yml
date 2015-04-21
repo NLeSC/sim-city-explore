@@ -1,5 +1,8 @@
 language: python
 python:
     - "2.7"
-install: "make install"
+install: 
+    - "sudo apt-get update -qq"
+    - "sudo apt-get install openblas"
+    - "make install"
 script: "make fulltest"
