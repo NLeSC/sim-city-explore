@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 from abc import ABCMeta, abstractmethod
 import json
-from __future__ import print_function
 
 """ Parameter ranges are given as 'parameter.name: [list]' or 'parameter.name: interval'"""
 
