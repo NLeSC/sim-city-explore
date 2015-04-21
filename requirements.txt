@@ -17,3 +17,4 @@ scipy==0.15.1
 pypet==0.1b.10
 -e git+https://github.com/blootsvoets/picasclient.git@v0.2#egg=picas-0.2
 -e git+https://github.com/NLeSC/sim-city-client.git@v0.3.1.1#egg=simcity-0.3.1.1
+
