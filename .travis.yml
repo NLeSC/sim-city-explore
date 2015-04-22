@@ -1,8 +1,10 @@
 language: python
 python:
     - "2.7"
-install: 
+before_install:
     - "sudo apt-get update -qq"
-    - "sudo apt-get install openblas"
+    - "sudo apt-get -qq install libatlas-base-dev"
+    - "sudo apt-get -qq install python-numpy-dev python-scipy python-matplotlib"
+install: 
     - "make install"
 script: "make fulltest"

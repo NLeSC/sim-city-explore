@@ -1,8 +1,6 @@
-numpy==1.9.2
 -e git+https://github.com/blootsvoets/numexpr.git#egg=numexpr-2.4.2.dev0
 Cython==0.22
 emcee==2.1.0
-matplotlib==1.4.3
 --allow-external mystic
 --allow-unverified mystic
 mystic==0.2a1
@@ -12,7 +10,6 @@ python-dateutil==2.4.2
 nose==1.3.6
 six==1.9.0
 pandas==0.16.0
-scipy==0.15.1
 -e git+https://github.com/blootsvoets/picasclient.git@v0.2#egg=picas-0.2
 -e git+https://github.com/NLeSC/sim-city-client.git@v0.3.1.1#egg=simcity-0.3.1.1
 
