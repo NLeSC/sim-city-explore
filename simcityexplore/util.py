@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # SIM-CITY explore
 #
 # Copyright 2015 Joris Borgdorff <j.borgdorff@esciencecenter.nl>
@@ -15,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-import tables as tb
 
-
-def read_csvdef(file):
-    pass
-
-inputdata = np.getfromtxt
+def make_hash(*args):
+    value = 0x345678
+    for arg in args:
+        value = (1000003 * value) ^ hash(arg)
+    if value == -1:
+        value = -2
+    return value

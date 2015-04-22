@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # SIM-CITY explore
 #
 # Copyright 2015 Joris Borgdorff <j.borgdorff@esciencecenter.nl>
@@ -15,11 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-import tables as tb
+from .parameters import (parse_parameter_spec, ParameterSpec, ChoiceSpec,
+                         IntervalSpec, StringSpec)
 
-
-def read_csvdef(file):
-    pass
-
-inputdata = np.getfromtxt
+__all__ = [
+    'parse_parameter_spec', 'ParameterSpec', 'ChoiceSpec', 'IntervalSpec',
+    'StringSpec',
+]
