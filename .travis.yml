@@ -1,10 +1,25 @@
 language: python
 python:
-    - "2.7"
+  - "2.7"
+  - "3.4"
 before_install:
-    - "sudo apt-get update -qq"
-    - "sudo apt-get -qq install libatlas-base-dev hdf5-tools libhdf5-serial-dev"
-    - "sudo apt-get -qq install python-numpy-dev python-scipy python-matplotlib"
-install: 
-    - "make install"
-script: "make fulltest"
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes conda
+  - conda create --yes -n condaenv python=$TRAVIS_PYTHON_VERSION
+  - conda install --yes -n condaenv pip
+  - source activate condaenv
+  # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
+  - sudo rm -rf /dev/shm
+  - sudo ln -s /run/shm /dev/shm
+  - "sudo apt-get update -qq"
+  - "sudo apt-get -qq install hdf5-tools libhdf5-serial-dev"
+# Install packages
+install:
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib nose dateutil pandas
+  # Coverage packages are on my binstar channel
+  - make install
+script:
+  - make fulltest
