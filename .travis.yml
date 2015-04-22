@@ -1,7 +1,6 @@
 language: python
 python:
   - "2.7"
-  - "3.4"
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
@@ -16,10 +15,8 @@ before_install:
   - sudo ln -s /run/shm /dev/shm
   - "sudo apt-get update -qq"
   - "sudo apt-get -qq install hdf5-tools libhdf5-serial-dev"
-# Install packages
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib nose dateutil pandas
-  # Coverage packages are on my binstar channel
   - make install
 script:
   - make fulltest
