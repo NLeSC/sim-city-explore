@@ -1,4 +1,4 @@
--e git+https://github.com/blootsvoets/numexpr.git#egg=numexpr-2.4.2.dev0
+-e git+https://github.com/pydata/numexpr.git@e729d1bcef25#egg=numexpr-2.4.2.dev0
 Cython==0.22
 emcee==2.1.0
 --allow-external mystic
