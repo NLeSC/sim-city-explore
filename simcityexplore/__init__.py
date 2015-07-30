@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .parameters import (parse_parameter_spec, ParameterSpec, ChoiceSpec,
-                         IntervalSpec, StringSpec)
+from .parameter import (parse_parameter_spec, ParameterSpec, ChoiceSpec,
+                        IntervalSpec, StringSpec, parse_parameters)
 
 __all__ = [
     'parse_parameter_spec', 'ParameterSpec', 'ChoiceSpec', 'IntervalSpec',
     'StringSpec',
+    'parse_parameters',
 ]

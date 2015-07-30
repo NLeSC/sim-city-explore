@@ -14,35 +14,64 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .util import make_hash
 import sys
+
+
+def parse_parameters(parameters, parameter_specs):
+    paramset = frozenset(parameters)
+    param_specset = frozenset([param['name'] for param in parameter_specs])
+
+    if not (paramset <= param_specset):
+        raise ValueError("parameters {} not specified ({} vs {})"
+                         .format(list(paramset - param_specset), parameters,
+                                 parameter_specs))
+
+    params = {}
+    for spec_raw in parameter_specs:
+        spec = parse_parameter_spec(spec_raw)
+        try:
+            value = parameters[spec.name]
+            del parameters[spec.name]
+            value = spec.coerce(value)
+        except KeyError:
+            raise ValueError("parameter for {} is not specified {} ... {}"
+                             .format(spec.name, spec, parameters))
+        except (TypeError, ValueError):
+            raise ValueError("value of {} for parameter does not comply to {}"
+                             .format(value, spec.dtype))
+        else:
+            if spec.is_valid(value):
+                params[spec.name] = value
+            else:
+                raise ValueError(
+                    "value of {} for parameter does not comply to {}"
+                    .format(value, spec))
+    return params
 
 
 def parse_parameter_spec(idict):
     default = idict.get('default', None)
-    if idict['type'] == 'interval':
+    if idict['type'] in ('number', 'interval'):
         dtype = idict.get('dtype', 'float')
-        return IntervalSpec(idict['name'], idict['min'], idict['max'],
+        return IntervalSpec(idict['name'], idict.get('min'), idict.get('max'),
                             default, dtype)
     if idict['type'] == 'choice':
         dtype = idict.get('dtype', 'str')
         return ChoiceSpec(idict['name'], idict['choices'], default, dtype)
-    if idict['type'] == 'str':
-        min_len = idict.get('min_length', None)
-        max_len = idict.get('max_length', None)
+    if idict['type'] in ('str', 'string'):
+        min_len = idict.get('min_length')
+        max_len = idict.get('max_length')
         return StringSpec(idict['name'], default, min_len, max_len)
     if idict['type'] == 'point2d':
-        x = IntervalSpec('x',
-                         idict.get('x').get('min'),
-                         idict.get('x').get('max'),
-                         None, 'float')
-        y = IntervalSpec('y',
-                         idict.get('y').get('min'),
-                         idict.get('y').get('max'),
-                         None, 'float')
+        x_dict = idict.get('x', {})
+        x_dict.update({'name': 'x', 'type': 'interval'})
+        y_dict = idict.get('y', {})
+        y_dict.update({'name': 'y', 'type': 'interval'})
+        x = parse_parameter_spec(x_dict)
+        y = parse_parameter_spec(y_dict)
         try:
-            properties = dict((k, parse_parameter_spec(v))
-                              for k, v in idict['properties'])
+            properties = [parse_parameter_spec(prop)
+                          for prop in idict.get('properties', [])]
         except KeyError:
             properties = None
 
@@ -97,7 +126,7 @@ class ParameterDatatype(object):
         return hash(self.dtype)
 
     def __str__(self):
-        return 'datatype<{self.dtype}>'.format(self=self)
+        return str(self.dtype)
 
     def is_valid(self, value):
         return type(value) == self.dtype
@@ -126,6 +155,9 @@ class ParameterSpec(object):
     def name(self):
         return self._name
 
+    def coerce(self, value):
+        return self.dtype.coerce(value)
+
     def is_valid(self, value):
         raise NotImplementedError
 
@@ -143,7 +175,7 @@ class ChoiceSpec(ParameterSpec):
             default = choices[0]
 
         super(ChoiceSpec, self).__init__(name, default, dtype)
-        self._choices = [self.dtype.coerce(choice) for choice in choices]
+        self._choices = [self.coerce(choice) for choice in choices]
         self._choices.sort()
 
     @property
@@ -151,7 +183,7 @@ class ChoiceSpec(ParameterSpec):
         return self._choices.copy()
 
     def is_valid(self, value):
-        return type(value) == self.dtype and value in self._choices
+        return self.dtype.is_valid(value) and value in self._choices
 
     def __str__(self):
         return ('{self.name}: choice {self._choices} {self.dtype}'
@@ -164,7 +196,7 @@ class ChoiceSpec(ParameterSpec):
                 self.dtype == other.dtype)
 
     def __hash__(self):
-        return make_hash(self._default, self.dtype, *self._choices)
+        return hash((self._default, self.dtype, self._choices))
 
 
 class IntervalSpec(ParameterSpec):
@@ -217,7 +249,7 @@ class IntervalSpec(ParameterSpec):
                 self.dtype == other.dtype)
 
     def __hash__(self):
-        return make_hash(self._min, self._max, self._default, self.dtype)
+        return hash((self._min, self._max, self._default, self.dtype))
 
 
 class StringSpec(ParameterSpec):
@@ -229,6 +261,10 @@ class StringSpec(ParameterSpec):
         len_dtype = ParameterDatatype(int)
         self._min_len = len_dtype.coerce_if_set(min_len, 0)
         self._max_len = len_dtype.coerce_if_set(max_len, sys.maxsize)
+        if self._min_len > self._max_len:
+            raise ValueError("Minimum string length of {self.name} "
+                             "({self.min_len}) longer than maximum "
+                             "({self.max_len}).".format(self=self))
 
     @property
     def min_len(self):
@@ -254,7 +290,7 @@ class StringSpec(ParameterSpec):
                 self.default == other.default)
 
     def __hash__(self):
-        return make_hash(self.min_len, self.max_len, self.default)
+        return hash((self.min_len, self.max_len, self.default))
 
 
 class Point2DSpec(ParameterSpec):
@@ -266,17 +302,38 @@ class Point2DSpec(ParameterSpec):
         self._x = x
         self._y = y
         self._properties = valid_properties
+        print(valid_properties)
 
     def is_valid(self, value):
         try:
-            return (self.dtype.is_valid(value) and
-                    self.x.is_valid(self.x.dtype.coerce(value['x'])) and
-                    self.y.is_valid(self.y.dtype.coerce(value['y'])) and
-                    all(v.is_valid(v.dtype.coerce(value[k]))
-                        for k, v in self.properties)
-                    )
+            return (
+                self.dtype.is_valid(value) and
+                self.x.is_valid(self.x.coerce(value['x'])) and
+                self.y.is_valid(self.y.coerce(value['y'])) and
+                frozenset(value.get('properties', {}).keys()).issubset(
+                    prop.name for prop in self._properties) and
+                all(
+                    prop.is_valid(prop.coerce(
+                        value.get('properties', {})[prop.name]
+                    ))
+                    for prop in self._properties)
+            )
         except KeyError:
             return False
+
+    def coerce(self, value):
+        value['x'] = self.x.coerce(value['x'])
+        value['y'] = self.y.coerce(value['y'])
+        if 'properties' in value:
+            value['properties'] = dict(
+                (prop.name, prop.coerce(value['properties'][prop.name]))
+                for prop in self._properties
+                if prop.name in value['properties']
+            )
+        else:
+            value['properties'] = {}
+
+        return value
 
     @property
     def x(self):
@@ -288,7 +345,7 @@ class Point2DSpec(ParameterSpec):
 
     @property
     def properties(self):
-        return dict(self._properties)
+        return self._properties.copy()
 
     def __str__(self):
         return ('{self.name}: point2d [{self.x}; {self.y}] {self.properties}'
@@ -302,4 +359,4 @@ class Point2DSpec(ParameterSpec):
                 self.properties == other.properties)
 
     def __hash__(self):
-        return make_hash(self.name, self.x, self.y, self.properties)
+        return hash((self.name, self.x, self.y, self.properties))
