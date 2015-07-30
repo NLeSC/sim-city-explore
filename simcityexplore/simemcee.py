@@ -18,43 +18,94 @@
 from __future__ import print_function
 import numpy as np
 import emcee
+import simcity
+import math
 import matplotlib.pyplot as pl
+from simulator import Simulator
+
+ensemble = "myfirstbaselineensemble"
+host = "lisa"
+command = "~/baseline-model/optimallocations.py"
+version = "0.1"
+
+# Use a uniform random sample in [0, 1]^2
 
 
-def lnprob(x, mu, icov):
-    diff = x - mu
-    return -np.dot(diff, np.dot(icov, diff)) / 2.0
+def flat_prior(x):
+    if x[0] >= 0 and x[0] <= 1 and x[1] >= 0 and x[1] <= 1:
+        return 0.0
+    else:
+        return float('-inf')
 
-ndim = 50
+# def scoring(task):
+#     geojson_str = task.get_attachment('GeoFirePaths.json',
+#        retrieve_from_database=simcity.get_task_database())['data']
+#     geojson = json.loads(geojson_str)
+#
+#     response_times = [feature['properties']['responsetime']
+#                           for f in geojson['features']]
+#
+#     return math.log(response_times)
 
-means = np.random.rand(ndim)
 
-print("constructing covariance matrix")
-cov = 0.5 - np.random.rand(ndim ** 2).reshape((ndim, ndim))
-cov = np.triu(cov)
-cov += cov.T - np.diag(cov.diagonal())
-cov = np.dot(cov, cov)
+def scoring(task):
+    response_time = task.get_attachment(
+        'response_time.csv',
+        retrieve_from_database=simcity.get_task_database()
+    )['data']
 
-icov = np.linalg.inv(cov)
+    return math.log(float(response_time))
 
+
+simulator = Simulator(ensemble, version, command, scoring, host, max_jobs=1,
+                      argnames=['x', 'y'], argprecisions=[0.01, 0.01],
+                      polling_time=3)
+#
+# ndim = 1
+# means = np.random.rand(ndim)
+#
+# print("constructing covariance matrix")
+# cov = 0.5 - np.random.rand(ndim ** 2).reshape((ndim, ndim))
+# cov = np.triu(cov)
+# cov += cov.T - np.diag(cov.diagonal())
+# cov = np.dot(cov, cov)
+#
+# icov = np.linalg.inv(cov)
+
+ntemps = 10
+nwalkers = 4
+ndim = 2
+p0 = np.random.rand(ntemps, nwalkers, ndim)
+
+# sampler
 print("constructing walkers")
-nwalkers = 250
-p0 = np.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
+# nwalkers = 250
+# p0 = np.random.rand(ndim * nwalkers).reshape((nwalkers, ndim))
 
-sampler = emcee.EnsembleSampler(
-    nwalkers, ndim, lnprob, args=[means, icov], threads=15)
+# sampler = emcee.EnsembleSampler(
+#     nwalkers, ndim, run_task, args=[means, icov], threads=15)
+
+sampler = emcee.PTSampler(ntemps, nwalkers, ndim, simulator, flat_prior,
+                          threads=8)
 
 print("burning in mcmc")
-pos, prob, state = sampler.run_mcmc(p0, 100)
+for p, lnprob, lnlike in sampler.sample(p0, iterations=10):
+    pass
 sampler.reset()
 
 print("running mcmc")
-sampler.run_mcmc(pos, 1000)
+for p, lnprob, lnlike in sampler.sample(p, lnprob0=lnprob,
+                                        lnlike0=lnlike,
+                                        iterations=100, thin=10):
+    pass
 
-for i in range(ndim):
-    pl.figure()
-    pl.hist(sampler.flatchain[:, i], 100, color="k", histtype="step")
-    pl.title("Dimension {0:d}".format(i))
+print(sampler.flatchain)
+
+for walker in sampler.flatchain:
+    for i in range(ndim):
+        pl.figure()
+        pl.hist(walker[:, i], 100, color="k", histtype="step")
+        pl.title("Dimension {0:d}".format(i))
 
 pl.show()
 
