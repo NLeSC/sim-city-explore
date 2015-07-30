@@ -32,6 +32,14 @@ def test_parse_parameters():
             }
         },
         'd': 'ja',
+        'e': [
+            'za',
+            'na'
+        ],
+        'f': [
+            {'x': 1, 'y': 2},
+            {'x': -1, 'y': 1},
+        ]
     }
     parameter_specs = [
         {'name': 'a', 'type': 'str'},
@@ -40,6 +48,9 @@ def test_parse_parameters():
             {'name': 'name', 'type': 'string'},
         ]},
         {'name': 'd', 'type': 'choice', 'choices': ['ja', 'da']},
+        {'name': 'e', 'type': 'list', 'contents': {'type': 'str'},
+            'max_length': 2,  'max_length': 2},
+        {'name': 'f', 'type': 'list', 'contents': {'type': 'point2d'}},
     ]
     params = simcityexplore.parse_parameters(parameters, parameter_specs)
     assert_equals(1, params['b'])
@@ -109,6 +120,9 @@ def test_malformed_str():
     }
     assert_raises(ValueError, simcityexplore.parse_parameter_spec,
                   parameter_spec)
+    parameter_spec['min_length'] = -1
+    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
+                  parameter_spec)
 
 
 def test_wellformed_interval():
@@ -124,9 +138,8 @@ def test_halfformed_interval():
 
 
 def test_malformed_interval():
-    parameter_spec = {'name': 'a', 'type': 'interval', 'min': 5, 'max': 4}
     assert_raises(ValueError, simcityexplore.parse_parameter_spec,
-                  parameter_spec)
+                  {'name': 'a', 'type': 'interval', 'min': 5, 'max': 4})
 
 
 def test_unformed_interval():
@@ -164,3 +177,14 @@ def test_malformed_choice():
                   {'name': 'a', 'type': 'choice', 'choices': 'not a list'})
     assert_raises(ValueError, simcityexplore.parse_parameter_spec,
                   {'name': 'a', 'type': 'choice', 'choices': []})
+
+
+def test_malformed_list():
+    assert_raises(KeyError, simcityexplore.parse_parameter_spec,
+                  {'name': 'a', 'type': 'list', 'contents': {}})
+    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
+                  {'name': 'a', 'type': 'list', 'contents': {'type': 'str'},
+                   'min_length': -1})
+    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
+                  {'name': 'a', 'type': 'list', 'contents': {'type': 'str'},
+                   'min_length': 5, 'max_length': '4'})

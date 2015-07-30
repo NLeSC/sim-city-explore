@@ -76,6 +76,12 @@ def parse_parameter_spec(idict):
             properties = None
 
         return Point2DSpec(idict['name'], x, y, properties)
+    if idict['type'] == 'list':
+        idict['contents'].update({'name': 'contents'})
+        content_spec = parse_parameter_spec(idict['contents'])
+        min_len = idict.get('min_length')
+        max_len = idict.get('max_length')
+        return ListSpec(idict['name'], content_spec, min_len, max_len)
 
     raise ValueError('parameter type not recognized')
 
@@ -134,14 +140,30 @@ class ParameterDatatype(object):
 
 class ParameterSpec(object):
 
+    def __init__(self, name):
+        self._name = name
+
+    @property
+    def name(self):
+        return self._name
+
+    def coerce(self, value):
+        raise NotImplementedError
+
+    def is_valid(self, value):
+        raise NotImplementedError
+
+
+class SimpleParameterSpec(ParameterSpec):
+
     def __init__(self, name, default, dtype):
+        super(SimpleParameterSpec, self).__init__(name)
         self._dtype = ParameterDatatype(dtype)
 
         if default is None:
             self._default = None
         else:
             self._default = self.dtype.coerce(default)
-        self._name = name
 
     @property
     def default(self):
@@ -151,18 +173,11 @@ class ParameterSpec(object):
     def dtype(self):
         return self._dtype
 
-    @property
-    def name(self):
-        return self._name
-
     def coerce(self, value):
         return self.dtype.coerce(value)
 
-    def is_valid(self, value):
-        raise NotImplementedError
 
-
-class ChoiceSpec(ParameterSpec):
+class ChoiceSpec(SimpleParameterSpec):
 
     """ Specify a limited amount of choices """
 
@@ -199,7 +214,7 @@ class ChoiceSpec(ParameterSpec):
         return hash((self._default, self.dtype, self._choices))
 
 
-class IntervalSpec(ParameterSpec):
+class IntervalSpec(SimpleParameterSpec):
 
     """ Specify an interval for parameters to lie in """
 
@@ -252,7 +267,7 @@ class IntervalSpec(ParameterSpec):
         return hash((self._min, self._max, self._default, self.dtype))
 
 
-class StringSpec(ParameterSpec):
+class StringSpec(SimpleParameterSpec):
 
     """ Specify string characteristics. """
 
@@ -265,6 +280,10 @@ class StringSpec(ParameterSpec):
             raise ValueError("Minimum string length of {self.name} "
                              "({self.min_len}) longer than maximum "
                              "({self.max_len}).".format(self=self))
+        if self._min_len < 0:
+            raise ValueError("Minimum string length of {self.name} "
+                             "({self.min_len}) must be at least 0."
+                             .format(self=self))
 
     @property
     def min_len(self):
@@ -293,12 +312,53 @@ class StringSpec(ParameterSpec):
         return hash((self.min_len, self.max_len, self.default))
 
 
+class ListSpec(ParameterSpec):
+
+    """ Specify a list of data. """
+
+    def __init__(self, name, content_spec, min_len, max_len):
+        super(ListSpec, self).__init__(name)
+        self._content_spec = content_spec
+        len_dtype = ParameterDatatype(int)
+        self._min_len = len_dtype.coerce_if_set(min_len, 0)
+        self._max_len = len_dtype.coerce_if_set(max_len, sys.maxsize)
+        if self._min_len > self._max_len:
+            raise ValueError("Minimum list length of {self.name} "
+                             "({self.min_len}) longer than maximum "
+                             "({self.max_len}).".format(self=self))
+        if self._min_len < 0:
+            raise ValueError("Minimum list length of {self.name} "
+                             "({self.min_len}) must be at least 0."
+                             .format(self=self))
+
+    @property
+    def content_spec(self):
+        return self._content_spec
+
+    @property
+    def min_len(self):
+        return self._min_len
+
+    @property
+    def max_len(self):
+        return self._max_len
+
+    def is_valid(self, value):
+        return (type(value) == list and
+                all(self.content_spec.is_valid(v) for v in value) and
+                len(value) >= self.min_len and
+                len(value) <= self.max_len)
+
+    def coerce(self, value):
+        return [self.content_spec.coerce(v) for v in value]
+
+
 class Point2DSpec(ParameterSpec):
 
     """ Specify a 2D point, with given properties. """
 
     def __init__(self, name, x, y, valid_properties):
-        super(Point2DSpec, self).__init__(name, None, dict)
+        super(Point2DSpec, self).__init__(name)
         self._x = x
         self._y = y
         self._properties = valid_properties
@@ -307,7 +367,7 @@ class Point2DSpec(ParameterSpec):
     def is_valid(self, value):
         try:
             return (
-                self.dtype.is_valid(value) and
+                type(value) == dict and
                 self.x.is_valid(self.x.coerce(value['x'])) and
                 self.y.is_valid(self.y.coerce(value['y'])) and
                 frozenset(value.get('properties', {}).keys()).issubset(
