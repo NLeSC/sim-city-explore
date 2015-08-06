@@ -7,7 +7,6 @@ all: install
 
 requirements:
 	@pip install -r requirements.txt
-	@pip install pypet==0.1b.10 tables==3.1.1
 
 test-requirements:
 	@pip install -r test_requirements.txt > /dev/null
