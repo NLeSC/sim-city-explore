@@ -162,6 +162,26 @@ def test_simple_point():
     simcityexplore.parse_parameters(parameters, parameter_specs)
 
 
+def test_extended_point():
+    parameters = {'a': {
+        'x': 1,
+        'y': 2,
+        'properties': {
+            'name': 'mine',
+            'id': 1
+        },
+    }}
+    parameter_specs = [{
+        'name': 'a',
+        'type': 'point2d',
+        'properties': [
+            {'type': 'str', 'name': 'name'},
+            {'type': 'number', 'name': 'id'},
+        ],
+    }]
+    simcityexplore.parse_parameters(parameters, parameter_specs)
+
+
 def test_unknown_param_type():
     assert_raises(ValueError, simcityexplore.parse_parameter_spec,
                   {'name': 'a', 'type': 'not known'})
