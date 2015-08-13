@@ -60,10 +60,9 @@ if __name__ == '__main__':
 
         return math.log(float(response_time))
 
-
-    simulator = Simulator(ensemble, version, command, scoring, host, max_jobs=2,
-                          argnames=['x', 'y'], argprecisions=[0.01, 0.01],
-                          polling_time=3)
+    simulator = Simulator(ensemble, version, command, scoring, host,
+                          max_jobs=2, argnames=['x', 'y'],
+                          argprecisions=[0.01, 0.01], polling_time=3)
 
     specs = [IntervalSpec('x', float, 0, 1), IntervalSpec('y', float, 0, 1)]
     samples = list(sample(specs, 10))
@@ -72,7 +71,7 @@ if __name__ == '__main__':
     for p in samples:
         simulator.start(p)
         print(".", end="")
-    
+
     print("")
 
     while simulator.is_running():

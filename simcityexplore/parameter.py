@@ -35,8 +35,8 @@ def parse_parameters(parameters, parameter_specs):
             del parameters[spec.name]
             value = spec.coerce(value)
         except KeyError:
-            raise ValueError("parameter for {} is not specified {} ... {}"
-                             .format(spec.name, spec, parameters))
+            raise ValueError("parameter for {} is not specified {}"
+                             .format(spec.name, spec))
         except (TypeError, ValueError):
             raise ValueError("value of {} for parameter does not comply to {}"
                              .format(value, spec))
@@ -165,6 +165,7 @@ class ParameterSpec(object):
     def __hash__(self, other):
         return hash(self.name)
 
+
 class FixedSpec(object):
 
     def __init__(self, name, value, dtype=None):
@@ -186,7 +187,7 @@ class FixedSpec(object):
 
     def choose(self, mapping):
         return self.value
-    
+
     def __str__(self):
         return "fixed: {}".format(self.value)
 
@@ -226,7 +227,7 @@ class SimpleParameterSpec(ParameterSpec):
 
     def __hash__(self):
         return hash((super(SimpleParameterSpec, self).__hash__()),
-                     self.default, self.dtype)
+                    self.default, self.dtype)
 
 
 class ChoiceSpec(SimpleParameterSpec):
@@ -312,15 +313,16 @@ class IntervalSpec(SimpleParameterSpec):
             return self.coerce(mapping * (self.max - self.min) + self.min)
         elif self.min is not None:
             # exponential tail: [0, 1) -> [min, +inf)
-            return self.coerce(-100*math.log(1 - mapping) + self.min)
+            return self.coerce(-100 * math.log(1 - mapping) + self.min)
         elif self.max is not None:  # exponential tail towards +inf
             # exponential tail: [0, 1) -> [max, -inf)
-            return self.coerce(100*math.log(1 - mapping) + self.max)
+            return self.coerce(100 * math.log(1 - mapping) + self.max)
         elif mapping == 0.0:
             return float('-inf')
         else:
             # (0, 0.5, 1) -> (-inf, 0, inf)
-            return math.sign(mapping - 0.5) * 100 *math.log(1 - 2 * math.abs(0.5 - mapping))
+            return (math.sign(mapping - 0.5) *
+                    100 * math.log(1 - 2 * math.abs(0.5 - mapping)))
 
     def __str__(self):
         return ('{self.name}: interval [{self.min}, {self.max}] {self.dtype}'
@@ -420,12 +422,13 @@ class ListSpec(ParameterSpec):
 
     def coerce(self, value):
         return [self.content_spec.coerce(v) for v in value]
-    
+
     def __eq__(self, other):
         return (super(ListSpec, self).__eq__(other) and
                 self.content_spec == other.content_spec and
                 self.min_len == other.min_len and
                 self.max_len == other.max_len)
+
     def __hash__(self):
         return hash((super(ListSpec, self).__hash__(), self.content_spec,
                      self.min_len, self.max_len))

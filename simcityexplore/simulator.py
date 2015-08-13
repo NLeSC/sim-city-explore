@@ -23,6 +23,7 @@ import traceback
 
 
 class Simulator(object):
+
     """
     SIM-CITY simulator
     """
@@ -101,7 +102,8 @@ class Simulator(object):
 
     def start(self, p, host=None):
         self.current_pid += 1
-        self.proc[self.current_pid] = mp.Process(target=run_simulator, args=(self, self.current_pid, p, host,))
+        self.proc[self.current_pid] = mp.Process(
+            target=run_simulator, args=(self, self.current_pid, p, host,))
         self.proc[self.current_pid].start()
         return self.current_pid
 
@@ -117,6 +119,7 @@ class Simulator(object):
     def is_running(self):
         return len(self.proc) > 0 or self.has_result()
 
+
 def run_simulator(simulator, pid, p, host):
     try:
         # reinitialize database connections in each thread
@@ -126,4 +129,3 @@ def run_simulator(simulator, pid, p, host):
     except Exception as ex:
         traceback.print_exc()
         simulator.proc_q.put((pid, ex,))
-
