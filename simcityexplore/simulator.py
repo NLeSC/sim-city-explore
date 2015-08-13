@@ -18,13 +18,14 @@
 import simcity
 from picas.documents import Task
 from numbers import Number
-
-"""
-SIM-CITY simulator
-"""
+import multiprocessing as mp
+import traceback
 
 
 class Simulator(object):
+    """
+    SIM-CITY simulator
+    """
 
     def __init__(self, ensemble, version, command, scoring, host, max_jobs=4,
                  polling_time=60, argnames=None, argprecisions=None,
@@ -41,6 +42,9 @@ class Simulator(object):
         self.argnames = argnames
         self.argprecisions = argprecisions
         self.use_cache = use_cache
+        self.current_pid = 0
+        self.proc_q = mp.Queue()
+        self.proc = {}
 
     def _keyval(self, p, i):
         try:
@@ -94,3 +98,32 @@ class Simulator(object):
             raise EnvironmentError('Simulation %s failed: %s'
                                    % (task.id, str(task.get_errors())))
         return self.scoring(task)
+
+    def start(self, p, host=None):
+        self.current_pid += 1
+        self.proc[self.current_pid] = mp.Process(target=run_simulator, args=(self, self.current_pid, p, host,))
+        self.proc[self.current_pid].start()
+        return self.current_pid
+
+    def join(self):
+        pid, value = self.proc_q.get()
+        self.proc[pid].join()
+        del self.proc[pid]
+        return (pid, value,)
+
+    def has_result(self):
+        return not self.proc_q.empty()
+
+    def is_running(self):
+        return len(self.proc) > 0 or self.has_result()
+
+def run_simulator(simulator, pid, p, host):
+    try:
+        # reinitialize database connections in each thread
+        simcity.init(simcity.get_config())
+        value = simulator(p, host)
+        simulator.proc_q.put((pid, value,))
+    except Exception as ex:
+        traceback.print_exc()
+        simulator.proc_q.put((pid, ex,))
+
