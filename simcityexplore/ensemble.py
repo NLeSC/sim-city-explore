@@ -24,8 +24,14 @@ class Ensemble(picas.Document):
         self.specs = parameter_specs
 
 
-def ensemble_view(task_db, name, version, ensemble, url):
-    design_doc = '{}_{}_{}'.format(name, version, ensemble)
+def ensemble_view(task_db, name, version, url, ensemble = None):
+    if ensemble is None:
+        design_doc = '{}_{}'.format(name, version)
+        ensemble_condition = ''
+    else:
+        design_doc = '{}_{}_{}'.format(name, version, ensemble)
+        ensemble_condition = ' && doc.ensemble === "{}"'.format(ensemble)
+
     doc_id = '_design/{}'.format(design_doc)
     try:
         task_db.get(doc_id)
@@ -36,7 +42,7 @@ def ensemble_view(task_db, name, version, ensemble, url):
         map_fun = """
     function(doc) {
       if (doc.type === "task" && doc.name === "{name}" &&
-          doc.version === "{version}" && doc.ensemble === "{ensemble}") {
+          doc.version === "{version}"{ensemble_condition}) {
         emit(doc._id, {
           "id": doc._id,
           "rev": doc._rev,
@@ -47,7 +53,7 @@ def ensemble_view(task_db, name, version, ensemble, url):
           "input": doc.input
         });
       }
-    }""".format(name=name, version=version, ensemble=ensemble, url=url)
+    }""".format(name=name, version=version, ensemble_condition=ensemble_condition, url=url)
 
         task_db.add_view('all_docs', map_fun, design_doc=design_doc)
 
