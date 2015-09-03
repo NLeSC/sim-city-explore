@@ -16,9 +16,11 @@
 
 from .parameter import (parse_parameter_spec, ParameterSpec, ChoiceSpec,
                         IntervalSpec, StringSpec, parse_parameters)
+from .ensemble import ensemble_view
 
 __all__ = [
     'parse_parameter_spec', 'ParameterSpec', 'ChoiceSpec', 'IntervalSpec',
     'StringSpec',
     'parse_parameters',
+    'ensemble_view',
 ]
