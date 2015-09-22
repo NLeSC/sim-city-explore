@@ -17,7 +17,7 @@
 from __future__ import print_function
 import pyDOE
 from simulator import Simulator
-from parameter import IntervalSpec
+from parameter import Chooser
 import traceback
 import simcity
 import math
@@ -37,13 +37,12 @@ def sample(parameter_specs, samples, seed=None):
     if seed is not None:
         np.random.seed(seed)
 
-    lhd = pyDOE.lhs(len(parameter_specs), samples=samples)
+    chooser = Chooser(parameter_specs)
+    sample_dimensions = chooser.num_parameters()
 
-    return (
-        [
-            spec.choose(sample[i])
-            for i, spec in enumerate(parameter_specs)
-        ] for sample in lhd)
+    lhd = pyDOE.lhs(sample_dimensions, samples=samples)
+
+    return ( chooser.choose(sample) for sample in lhd )
 
 
 if __name__ == '__main__':
@@ -64,7 +63,9 @@ if __name__ == '__main__':
                           max_jobs=2, argnames=['x', 'y'],
                           argprecisions=[0.01, 0.01], polling_time=3)
 
-    specs = [IntervalSpec('x', float, 0, 1), IntervalSpec('y', float, 0, 1)]
+
+    unit = {'type': 'number', 'minimum': 0, 'maximum': 1}
+    specs = { 'properties':  {'x': unit, 'y': unit} }
     samples = list(sample(specs, 10))
     results = {}
     print("Adding simulations", end="")

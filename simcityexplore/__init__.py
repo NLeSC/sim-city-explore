@@ -14,13 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .parameter import (parse_parameter_spec, ParameterSpec, ChoiceSpec,
-                        IntervalSpec, StringSpec, parse_parameters)
+from .parameter import (parse_parameters, Chooser)
 from .ensemble import ensemble_view
+from .orthogonal import sample as orthogonal_sample
 
 __all__ = [
     'parse_parameter_spec', 'ParameterSpec', 'ChoiceSpec', 'IntervalSpec',
     'StringSpec',
     'parse_parameters',
     'ensemble_view',
+    'orthogonal_sample',
 ]
