@@ -23,13 +23,11 @@ from nose.tools import assert_equals, assert_true, assert_raises
 def test_parse_parameters():
     parameters = {
         'a': 'bla',
-        'b': '1',
+        'b': 1,
         'c': {
-            'x': '0.5',
-            'y': '3',
-            'properties': {
-                'name': 'lala'
-            }
+            'x': 0.5,
+            'y': 3,
+            'name': 'lala'
         },
         'd': 'ja',
         'e': [
@@ -41,36 +39,37 @@ def test_parse_parameters():
             {'x': -1, 'y': 1},
         ]
     }
-    parameter_specs = [
-        {'name': 'a', 'type': 'str'},
-        {'name': 'b', 'type': 'interval'},
-        {'name': 'c', 'type': 'point2d', 'properties': [
-            {'name': 'name', 'type': 'string'},
-        ]},
-        {'name': 'd', 'type': 'choice', 'choices': ['ja', 'da']},
-        {'name': 'e', 'type': 'list', 'contents': {'type': 'str'},
-            'max_length': 2,  'max_length': 2},
-        {'name': 'f', 'type': 'list', 'contents': {'type': 'point2d'}},
-    ]
-    params = simcityexplore.parse_parameters(parameters, parameter_specs)
-    assert_equals(1, params['b'])
-    assert_equals(0.5, params['c']['x'])
+    parameter_specs = {
+        'properties': {
+            'a': {'type': 'string'},
+            'b': {'type': 'number'},
+            'c': {
+                'allOf': [
+                   {'$ref': 'https://simcity.amsterdam-complexity.nl/schema/point2d'},
+                   { 'properties': { 'name': {'type': 'string'} } }
+                ]
+            },
+            'd': {'enum': ['ja', 'da']},
+            'e': {'items': {'type': 'string'},
+                'minItems': 1,  'maxItems': 2},
+            'f': {'items': {'$ref': 'https://simcity.amsterdam-complexity.nl/schema/point2d'}},
+        }
+    }
+    simcityexplore.parse_parameters(parameters, parameter_specs)
+    assert_equals(1, parameters['b'])
+    assert_equals(0.5, parameters['c']['x'])
 
 
 def test_missing_parameter():
     parameters = {}
-    parameter_specs = [
-        {'name': 'a', 'type': 'str'}
-    ]
+    parameter_specs = {'properties': {'a': {'type': 'string'}}, 'required': ['a']}
     assert_raises(ValueError, simcityexplore.parse_parameters, parameters,
                   parameter_specs)
 
 
 def test_wrongtype_parameter():
     parameters = {'a': 'bla'}
-    parameter_specs = [
-        {'name': 'a', 'type': 'number'}
-    ]
+    parameter_specs = {'properties': {'a': {'type': 'number'}}}
     assert_raises(ValueError, simcityexplore.parse_parameters, parameters,
                   parameter_specs)
 
@@ -79,9 +78,9 @@ def test_wrong_maxlen():
     parameters = {
         'a': 'bla'
     }
-    parameter_specs = [
-        {'name': 'a', 'type': 'str', 'max_length': 2},
-    ]
+    parameter_specs = {'properties': {
+        'a': {'type': 'string', 'maxLength': 2}
+    }}
     assert_raises(ValueError, simcityexplore.parse_parameters, parameters,
                   parameter_specs)
 
@@ -90,75 +89,18 @@ def test_wrong_minlen():
     parameters = {
         'a': 'bla'
     }
-    parameter_specs = [
-        {'name': 'a', 'type': 'str', 'min_length': 4},
-    ]
+    parameter_specs = {'properties': {
+        'a': {'type': 'string', 'minLength': 4}
+    }}
     assert_raises(ValueError, simcityexplore.parse_parameters, parameters,
                   parameter_specs)
 
 
-def test_wellformed_str():
-    parameter_spec = {
-        'name': 'a',
-        'type': 'str',
-        'min_length': 2,
-        'max_length': 4,
-    }
-    spec = simcityexplore.parse_parameter_spec(parameter_spec)
-    assert_equals(simcityexplore.StringSpec, type(spec))
-    assert_equals(2, spec.min_len)
-    assert_equals(4, spec.max_len)
-    assert_equals(str, spec.dtype.dtype)
-
-
-def test_malformed_str():
-    parameter_spec = {
-        'name': 'a',
-        'type': 'str',
-        'min_length': 5,
-        'max_length': 4,
-    }
-    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
-                  parameter_spec)
-    parameter_spec['min_length'] = -1
-    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
-                  parameter_spec)
-
-
-def test_wellformed_interval():
-    parameter_spec = {'name': 'a', 'type': 'interval', 'min': 0, 'max': 4}
-    spec = simcityexplore.parse_parameter_spec(parameter_spec)
-    assert_equals(2, spec.default)
-
-
-def test_halfformed_interval():
-    parameter_spec = {'name': 'a', 'type': 'interval', 'max': 4}
-    spec = simcityexplore.parse_parameter_spec(parameter_spec)
-    assert_equals(4, spec.default)
-
-
-def test_malformed_interval():
-    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
-                  {'name': 'a', 'type': 'interval', 'min': 5, 'max': 4})
-
-
-def test_unformed_interval():
-    parameter_spec = {'name': 'a', 'type': 'interval'}
-    spec = simcityexplore.parse_parameter_spec(parameter_spec)
-    assert_equals(float('-inf'), spec.min)
-    assert_equals(float('+inf'), spec.max)
-
-
-def test_unformed_str():
-    parameter_spec = {'name': 'a', 'type': 'str'}
-    spec = simcityexplore.parse_parameter_spec(parameter_spec)
-    assert_equals(0, spec.min_len)
-    assert_true(spec.max_len > 10000000)
-
-
 def test_simple_point():
     parameters = {'a': {'x': 1, 'y': 2}}
-    parameter_specs = [{'name': 'a', 'type': 'point2d'}]
+    parameter_specs = {'properties': {
+        'a': {'$ref': 'https://simcity.amsterdam-complexity.nl/schema/point2d'}
+    }}
     simcityexplore.parse_parameters(parameters, parameter_specs)
 
 
@@ -166,65 +108,15 @@ def test_extended_point():
     parameters = {'a': {
         'x': 1,
         'y': 2,
-        'properties': {
-            'name': 'mine',
-            'id': 1
-        },
+        'name': 'mine',
+        'id': 'la',
     }}
-    parameter_specs = [{
-        'name': 'a',
-        'type': 'point2d',
-        'properties': [
-            {'type': 'str', 'name': 'name'},
-            {'type': 'number', 'name': 'id'},
-        ],
-    }]
-    simcityexplore.parse_parameters(parameters, parameter_specs)
-
-
-def test_extended_point_empty_prop():
-    parameters = {'a': {
-        'x': 1,
-        'y': 2,
-        'properties': {
-            'name': '',
-            'id': 0,
-        },
+    parameter_specs = {'properties': {
+        'a': {
+            'allOf': [
+                {'properties': {'name': {'type': 'string'}}},
+                {'$ref': 'https://simcity.amsterdam-complexity.nl/schema/point2d'}
+            ]
+        }
     }}
-    parameter_specs = [{
-        'name': 'a',
-        'type': 'point2d',
-        'properties': [
-            {'type': 'str', 'name': 'name'},
-            {'type': 'number', 'name': 'id'},
-        ],
-    }]
     simcityexplore.parse_parameters(parameters, parameter_specs)
-
-
-def test_unknown_param_type():
-    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
-                  {'name': 'a', 'type': 'not known'})
-
-
-def test_unknown_param_dtype():
-    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
-                  {'name': 'a', 'type': 'number', 'dtype': 'not known'})
-
-
-def test_malformed_choice():
-    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
-                  {'name': 'a', 'type': 'choice', 'choices': 'not a list'})
-    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
-                  {'name': 'a', 'type': 'choice', 'choices': []})
-
-
-def test_malformed_list():
-    assert_raises(KeyError, simcityexplore.parse_parameter_spec,
-                  {'name': 'a', 'type': 'list', 'contents': {}})
-    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
-                  {'name': 'a', 'type': 'list', 'contents': {'type': 'str'},
-                   'min_length': -1})
-    assert_raises(ValueError, simcityexplore.parse_parameter_spec,
-                  {'name': 'a', 'type': 'list', 'contents': {'type': 'str'},
-                   'min_length': 5, 'max_length': '4'})

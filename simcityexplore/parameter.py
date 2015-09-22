@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import math
 import jsonschema
 import types
@@ -30,33 +29,21 @@ def parse_parameters(parameters, schema):
 
 
 def num_samples_object(chooser, schema):
-    props = {}
-    totalNum = 0
-    for key in schema['properties']:
-        num, v = chooser._number_of_samples(schema['properties'][key])
-        totalNum += num
-        props[key] = v
-    return (totalNum, props)
-
+    return sum(chooser._number_of_samples(s)
+               for s in schema['properties'].values())
 
 def num_samples_array(chooser, schema):
-    num, v = chooser._number_of_samples(schema['items'])
-    return (num * schema.get('minItems', 0), [v])
+    return (chooser._number_of_samples(schema['items']) *
+            schema.get('minItems', 0))
 
 
 def num_samples_ref(chooser, schema):
-    return chooser._number_of_samples(chooser.resolver.resolve(schema['$ref'])[1])
+    return chooser._number_of_samples(
+        chooser.resolver.resolve(schema['$ref'])[1])
 
 
 def num_samples_allOf(chooser, schema):
-    props = {}
-    num = 0
-    for s in schema['allOf']:
-        n, v = chooser._number_of_samples(s, value)
-        props.update(v)
-        num += n
-
-    return num, props
+    return sum(chooser._number_of_samples(s) for s in schema['allOf'])
 
 
 def choose_object(chooser, schema, value, idx):
@@ -138,6 +125,7 @@ def choose_string(chooser, schema, value, idx):
 
 
 class Chooser(object):
+    ''' Choose a parameter values for a json schema. '''
     _choosers = {
         'properties': {
             'properties': choose_object,
@@ -152,14 +140,29 @@ class Chooser(object):
             'string': choose_string,
         },
     }
-    _num_samples = {
+    _num_parameters = {
         'properties': num_samples_object,
         'items': num_samples_array,
         '$ref': num_samples_ref,
         'allOf': num_samples_allOf,
     }
 
-    def __init__(self, schema, property_choosers={}, type_choosers={}, num_samples={}):
+    def __init__(self, schema, property_choosers={}, type_choosers={}, num_parameters={}):
+        '''
+        Initialize with a JSON schema object.
+
+        Alternative choice models may be added by setting property_choosers,
+        type_choosers, or num_samples. The first selects a json schema based on
+        whether a property is available. If so, the function under that
+        property is called. If none of the properties are found, it evaluates
+        the type in a similar way. Choosers should take a Chooser object
+        (self), a JSON schema, a list with floats between 0 and 1, and an index
+        indicating which of those floats should be used. It should return a
+        tuple with (value chosen, next unused index).
+
+        The num_parameters should take a Chooser object and a schema, and
+        return the number of parameters it takes.
+        '''
         self.resolver = jsonschema.RefResolver('', schema)
         self.choosers = {
             'properties': dict(Chooser._choosers['properties']),
@@ -168,8 +171,8 @@ class Chooser(object):
         self.choosers['properties'].update(property_choosers)
         self.choosers['types'].update(type_choosers)
         self.schema = schema
-        self.num_samples = dict(Chooser._num_samples)
-        self.num_samples.update(num_samples)
+        self.num_params = dict(Chooser._num_parameters)
+        self.num_params.update(num_parameters)
 
     def _choose(self, schema, value, idx):
         for prop in self.choosers['properties']:
@@ -184,17 +187,18 @@ class Chooser(object):
         raise ValueError('schema {0} cannot be chosen'.format(schema))
 
     def choose(self, value):
+        ''' '''
         return self._choose(self.schema, value, 0)[0]
 
     def num_parameters(self):
-        return self._number_of_samples(self.schema)[0]
+        return self._number_of_samples(self.schema)
 
     def _number_of_samples(self, schema):
-        for prop in self.num_samples:
+        for prop in self.num_params:
             if prop in schema:
-                return self.num_samples[prop](self, schema)
+                return self.num_params[prop](self, schema)
         else:
-            return (1, None)
+            return 1
 
     def for_type(self, typename):
         return self.choosers['types'][typename]

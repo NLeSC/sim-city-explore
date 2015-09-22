@@ -19,8 +19,7 @@ from .ensemble import ensemble_view
 from .orthogonal import sample as orthogonal_sample
 
 __all__ = [
-    'parse_parameter_spec', 'ParameterSpec', 'ChoiceSpec', 'IntervalSpec',
-    'StringSpec',
+    'Chooser',
     'parse_parameters',
     'ensemble_view',
     'orthogonal_sample',
