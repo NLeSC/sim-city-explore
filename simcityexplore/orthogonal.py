@@ -16,8 +16,9 @@
 
 from __future__ import print_function
 import pyDOE
-from simulator import Simulator
-from parameter import Chooser
+from .simulator import Simulator
+from .parameter import Chooser
+from .util import ProgressBar
 import traceback
 import simcity
 import math
@@ -30,9 +31,15 @@ def sample(parameter_specs, samples, seed=None):
 
     Does not ensure unique parameter settings.
 
-    Returns:
-        an enumerator with `samples` parameter settings, as a list of parameter
-        values
+    Parameters
+    ----------
+    parameter_specs: dict
+        a JSON-Schema dict with the parameter specifications
+    samples: int
+        number of samples to take within the specification
+
+    Returns: iterator
+        an iterator with parameter values
     '''
     if seed is not None:
         np.random.seed(seed)
@@ -42,7 +49,7 @@ def sample(parameter_specs, samples, seed=None):
 
     lhd = pyDOE.lhs(sample_dimensions, samples=samples)
 
-    return ( chooser.choose(sample) for sample in lhd )
+    return (chooser.choose(sample) for sample in lhd)
 
 
 if __name__ == '__main__':
@@ -63,24 +70,24 @@ if __name__ == '__main__':
                           max_jobs=2, argnames=['x', 'y'],
                           argprecisions=[0.01, 0.01], polling_time=3)
 
-
     unit = {'type': 'number', 'minimum': 0, 'maximum': 1}
-    specs = { 'properties':  {'x': unit, 'y': unit} }
+    specs = {'properties':  {'x': unit, 'y': unit}}
     samples = list(sample(specs, 10))
     results = {}
-    print("Adding simulations", end="")
-    for p in samples:
+
+    print("Adding simulations")
+    for p in ProgressBar.iterate(samples):
         simulator.start(p)
-        print(".", end="")
 
-    print("")
-
+    print("Waiting for processes")
+    bar = ProgressBar(len(samples))
+    bar.start()
     while simulator.is_running():
-        print("Waiting for process...", end="")
         i, value = simulator.join()
-        print(" got result for process {}".format(i))
         if isinstance(value, Exception):
             traceback.print_exception(type(value), value, None)
         results[str(samples[i - 1])] = value
+        bar.increment()
+    bar.finish()
 
     print(results)
