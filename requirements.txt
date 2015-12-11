@@ -7,3 +7,4 @@ pystache==0.5.4
 pyDOE==0.3.8
 scipy==0.16.0
 jsonschema==2.5.1
+progressbar==2.3

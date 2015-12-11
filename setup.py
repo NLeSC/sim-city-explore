@@ -41,6 +41,7 @@ setup(name='simcityexplore',
           'Programming Language :: Python :: 2 :: Only',
           'Topic :: System :: Distributed Computing'
       ],
-      install_requires=['numpy', 'matplotlib', 'emcee', 'simcity', 'jsonschema', 'pyDOE', 'scipy'],
+      install_requires=['numpy', 'matplotlib', 'emcee', 'simcity',
+                        'jsonschema', 'pyDOE', 'scipy', 'progressbar'],
       tests_require=['nose', 'pyflakes', 'pep8', 'coverage']
       )
