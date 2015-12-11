@@ -16,11 +16,11 @@
 
 from .parameter import (parse_parameters, Chooser)
 from .ensemble import ensemble_view
-from .orthogonal import sample as orthogonal_sample
+from .orthogonal import sample as sample_orthogonal
 
 __all__ = [
     'Chooser',
     'parse_parameters',
     'ensemble_view',
-    'orthogonal_sample',
+    'sample_orthogonal',
 ]
