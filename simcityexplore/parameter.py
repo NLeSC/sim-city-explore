@@ -38,7 +38,7 @@ def parse_parameters(parameters, schema):
 
     Raises
     ------
-    ValueError: if the parametrs do not conform to the schema
+    ValueError: if the parameters do not conform to the schema
     EnvironmentError: if the schema is not a valid JSON schema
     '''
     try:
