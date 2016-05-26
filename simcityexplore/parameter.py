@@ -119,7 +119,7 @@ def choose_array(chooser, schema, value, idx):
     idx: index in the array to start using values of
     '''
     arr = []
-    for i in xrange(schema.get('minItems', 0)):
+    for i in range(schema.get('minItems', 0)):
         v, idx = chooser._choose(schema['items'], value, idx)
         arr.append(v)
     return arr, idx
@@ -255,7 +255,7 @@ def choose_string(chooser, schema, value, idx):
     )
 
     options = '0123456789abcdef'
-    v = long(value[idx] * (math.pow(len(options), length) - 1))
+    v = int(value[idx] * (math.pow(len(options), length) - 1))
     string = ''
     for i in range(length):
         string = options[v % len(options)] + string

@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import picas
+import simcity
 
 
-class Ensemble(picas.Document):
+class Ensemble(simcity.Document):
 
     def __init__(self, name, parameter_specs):
         self.name = name

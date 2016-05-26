@@ -18,17 +18,18 @@ import progressbar
 
 
 class ProgressBar(progressbar.ProgressBar):
-    ''' ProgressBar with increment and ETA. '''
+    """ ProgressBar with increment and ETA. """
     def __init__(self, size=None, **kwargs):
-        ''' Size is total size of progressbar, other args are passed on. '''
+        """ Size is total size of progressbar, other args are passed on. """
         super(ProgressBar, self).__init__(
             maxval=size,
-            widgets=[progressbar.Percentage(), ' ', progressbar.Bar('=', '[', ']'),
+            widgets=[progressbar.Percentage(), ' ',
+                     progressbar.Bar('=', '[', ']'),
                      ' ', progressbar.widgets.ETA()],
             **kwargs)
 
     def increment(self):
-        self.update(self.curval + 1)
+        self.update(self.value + 1)
 
     @classmethod
     def iterate(cls, iterator, size=None, **kwargs):

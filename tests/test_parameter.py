@@ -17,7 +17,7 @@
 from __future__ import print_function
 
 import simcityexplore
-from nose.tools import assert_equals, assert_true, assert_raises
+from nose.tools import assert_equals, assert_raises
 
 
 def test_parse_parameters():

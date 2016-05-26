@@ -16,7 +16,6 @@
 
 
 import simcity
-from picas.documents import Task
 from numbers import Number
 import multiprocessing as mp
 import traceback
@@ -84,7 +83,7 @@ class Simulator(object):
                 }
             }''' % (self.command, self.version, js_input)
             for row in simcity.get_task_database().db.query(map_fun, limit=1):
-                task = Task(row.value)
+                task = simcity.Task(row.value)
                 print("using cache")
 
         if task is None:
@@ -111,7 +110,7 @@ class Simulator(object):
         pid, value = self.proc_q.get()
         self.proc[pid].join()
         del self.proc[pid]
-        return (pid, value,)
+        return pid, value
 
     def has_result(self):
         return not self.proc_q.empty()
