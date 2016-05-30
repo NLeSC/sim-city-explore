@@ -1,9 +1,9 @@
 emcee==2.1.0
 -e git+https://github.com/NLeSC/sim-city-client.git@develop#egg=simcity-0.3.4
-numpy==1.11.0
-matplotlib==1.5.1
+numpy>=1.9.2
+matplotlib>=1.4.3
 pystache==0.5.4
 pyDOE==0.3.8
-scipy==0.17.1
+scipy>=0.16.0
 jsonschema==2.5.1
 progressbar2==3.6.2
