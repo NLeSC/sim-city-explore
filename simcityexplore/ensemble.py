@@ -23,39 +23,3 @@ class Ensemble(simcity.Document):
         self.name = name
         self.specs = parameter_specs
 
-
-def ensemble_view(task_db, name, version, url, ensemble = None):
-    if ensemble is None:
-        design_doc = '{0}_{1}'.format(name, version)
-        ensemble_condition = ''
-    else:
-        design_doc = '{0}_{1}_{2}'.format(name, version, ensemble)
-        ensemble_condition = ' && doc.ensemble === "{0}"'.format(ensemble)
-
-    doc_id = '_design/{0}'.format(design_doc)
-    try:
-        task_db.get(doc_id)
-    except:
-        if not url.endswith('/'):
-            url = url + '/'
-
-        map_fun = '''
-    function(doc) {{
-      if (doc.type === "task" && doc.name === "{name}" &&
-          doc.version === "{version}"{ensemble_condition}) {{
-        emit(doc._id, {{
-          id: doc._id,
-          rev: doc._rev,
-          url: "{url}/" + doc._id,
-          error: doc.error,
-          lock: doc.lock,
-          done: doc.done,
-          input: doc.input
-        }});
-      }}
-    }}'''.format(name=name, version=version,
-                 ensemble_condition=ensemble_condition, url=url)
-
-        task_db.add_view('all_docs', map_fun, design_doc=design_doc)
-
-    return design_doc
