@@ -24,31 +24,6 @@ import jsonschema
 import types
 
 
-def parse_parameters(parameters, schema):
-    '''
-    Validates given parameters according to a JSON schema
-
-    Parameters
-    ----------
-    parameters: dict
-        a deep dict of values, where values may be simple types, dicts or lists
-    schema: dict
-        an object conforming to JSON schema syntax and semantics. Parameters
-        will be checked according to this schema.
-
-    Raises
-    ------
-    ValueError: if the parameters do not conform to the schema
-    EnvironmentError: if the schema is not a valid JSON schema
-    '''
-    try:
-        jsonschema.validate(parameters, schema)
-    except jsonschema.SchemaError as ex:
-        raise EnvironmentError(ex.message)
-    except jsonschema.ValidationError as ex:
-        raise ValueError(ex.message)
-
-
 def num_samples_object(chooser, schema):
     '''
     Given a Chooser object, run a deep scan of number of samples required for a
